@@ -22,7 +22,7 @@ namespace TestParser
     {
         static float counter = 0;
         //Область сканирования (от 1 до ITERATIONS_COUNT)
-        static float ITERATIONS_COUNT = 100000;
+        static float ITERATIONS_COUNT = 5000;
         //Число потоков:
         static int THREADS_COUNT = 100;
         static string host = "https://1000.menu/cooking/";
@@ -41,8 +41,8 @@ namespace TestParser
         static string ingredientsTypeSelectedSecondPath = "//option[@value='5']";
         static string authorPath = "//span[@class='profile-thumbnail font-no-style mt-1']";
         //!!! ПОМЕНЯЙ АДРЕСА ВЫВОДА:
-        static string filePath = "C:/Users/Skullhacker/Downloads/1000menu.txt";
-        static string filePath2 = "C:/Users/Skullhacker/Downloads/1000menu.json";
+        static string filePath = "C:/Users/Skullhacker/Downloads/1000menu2.txt";
+        static string filePath2 = "C:/Users/Skullhacker/Downloads/1000menu2.json";
         static List<Page> validPages = new List<Page>();
         static void Main(string[] args)
         {
@@ -85,16 +85,19 @@ namespace TestParser
         }
         static void GetAllRequests(List<int> pageIds, int numberOfThreads)
         {
+            //Обычный:
             //foreach (var pageId in pageIds)
             //{
             //    OneRequest(pageId);
             //}
+
+            //Потоки:
             Parallel.ForEach(pageIds, new ParallelOptions { MaxDegreeOfParallelism = numberOfThreads }, (pageId) =>
             {
-                OneRequest(pageId);
+                PageRequest(pageId);
             });
         }
-        static void OneRequest(int i)
+        static void PageRequest(int i)
         {
 
             string link = "";
@@ -105,7 +108,15 @@ namespace TestParser
             List<ExactIngredient> ingredients = new List<ExactIngredient>();
             string url = host + i;
             HtmlWeb site = new HtmlWeb();
-            var document = site.Load(url, "GET");
+            HtmlDocument document = new HtmlDocument();
+            try
+            {
+                document = site.Load(url, "GET");
+            }
+            catch
+            {
+                document = site.Load(url, "GET");
+            }
             if (CheckIfPageExist(document, authorPath))
             {
                 link = url;
@@ -209,52 +220,29 @@ namespace TestParser
         static List<string> FindInnerText(HtmlDocument doc, string path)
         {
             List<string> result = new List<string>();
-            try
+
+            if (doc.DocumentNode.SelectNodes(path) != null)
             {
-                if (doc.DocumentNode.SelectNodes(path) != null)
+                foreach (var element in doc.DocumentNode.SelectNodes(path))
                 {
-                    foreach (var element in doc.DocumentNode.SelectNodes(path))
-                    {
-                        result.Add(new string(element.InnerText.Where(t => !blacklistSymbols.Contains(t)).ToArray()));
-                    }
+                    result.Add(new string(element.InnerText.Where(t => !blacklistSymbols.Contains(t)).ToArray()));
                 }
             }
-            catch
-            {
-                if (doc.DocumentNode.SelectNodes(path) != null)
-                {
-                    foreach (var element in doc.DocumentNode.SelectNodes(path))
-                    {
-                        result.Add(new string(element.InnerText.Where(t => !blacklistSymbols.Contains(t)).ToArray()));
-                    }
-                }
             }
             return result;
         }
         static List<string> FindAttribute(HtmlDocument doc, string path, string attribute)
         {
             List<string> result = new List<string>();
-            try
+
+            if (doc.DocumentNode.SelectNodes(path) != null)
             {
-                if (doc.DocumentNode.SelectNodes(path) != null)
+                foreach (var element in doc.DocumentNode.SelectNodes(path))
                 {
-                    foreach (var element in doc.DocumentNode.SelectNodes(path))
-                    {
-                        string content = element.GetAttributeValue(attribute, string.Empty);
-                        result.Add(content);
-                    }
+                    string content = element.GetAttributeValue(attribute, string.Empty);
+                    result.Add(content);
                 }
             }
-            catch
-            {
-                if (doc.DocumentNode.SelectNodes(path) != null)
-                {
-                    foreach (var element in doc.DocumentNode.SelectNodes(path))
-                    {
-                        string content = element.GetAttributeValue(attribute, string.Empty);
-                        result.Add(content);
-                    }
-                }
             }
             return result;
         }
