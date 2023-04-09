@@ -228,7 +228,7 @@ namespace TestParser
                     result.Add(new string(element.InnerText.Where(t => !blacklistSymbols.Contains(t)).ToArray()));
                 }
             }
-            }
+            
             return result;
         }
         static List<string> FindAttribute(HtmlDocument doc, string path, string attribute)
@@ -243,7 +243,7 @@ namespace TestParser
                     result.Add(content);
                 }
             }
-            }
+            
             return result;
         }
         static bool CheckIfPageExist(HtmlDocument doc, string path)
