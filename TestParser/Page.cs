@@ -8,19 +8,23 @@ namespace TestParser
 {
     internal class Page
     {
-        public string DishName { get; set; }
+        public string Name { get; set; }
         public string Link { get; set; }
+        public string ImageLink { get; set; }
         public int Rating { get; set; }
         public int ServingsNumber { get; set; }
         public int Calories { get; set; }
+        public Time CookingTime { get; set; }
         public List<ExactIngredient> Ingredients { get; set; }
-        public Page(string link, string name, int rating, int servingsNumber, int calories, List<ExactIngredient> ingredients) 
+        public Page(string link, string name, string imagelink, int rating, int servingsNumber, int calories, Time cookingTime, List<ExactIngredient> ingredients) 
         {
-            DishName = name; 
+            Name = name; 
             Link = link;
+            ImageLink = imagelink;
             Rating = rating;
             ServingsNumber = servingsNumber;
             Calories = calories;
+            CookingTime = cookingTime;
             Ingredients = ingredients; 
         }
     }

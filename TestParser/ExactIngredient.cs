@@ -19,10 +19,10 @@ namespace TestParser
     }
     class ExactIngredient : Ingredient
     {
-        public float Quantity { get; set; }
+        public float Measurement { get; set; }
         public ExactIngredient(string name, string type, float quantity) : base(name, type)
         {
-            Quantity = quantity;
+            Measurement = quantity;
         }
     }
 }

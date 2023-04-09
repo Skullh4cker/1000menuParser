@@ -22,12 +22,13 @@ namespace TestParser
     {
         static float counter = 0;
         //Область сканирования (от 1 до ITERATIONS_COUNT)
-        static float ITERATIONS_COUNT = 5000;
+        static float ITERATIONS_COUNT = 80000;
         //Число потоков:
         static int THREADS_COUNT = 100;
         static string host = "https://1000.menu/cooking/";
         static char[] blacklistSymbols = new char[3] { '\t', '\n', '\r' };
         static string namePath = "//h1[@itemprop='name']";
+        static string imgPath = "//img[@class='result-photo bl photo']";
         static string ingredientsListPath = "//div[@class='list-column no-shrink']";
         static string recipeIngredientPath = "//meta[@itemprop='recipeIngredient']";
         static string ingredientsNamePath = "//a[@class='name']";
@@ -35,6 +36,7 @@ namespace TestParser
         static string neutralRatingPath = "//a[@class='review-points px-1 py-1 inlbl va-m link-no-style font-small ']";
         static string negativeRatingPath = "//a[@class='review-points px-1 py-1 inlbl va-m link-no-style font-small err']";
         static string servingNumbersPath = "//input[@id='yield_num_input']";
+        static string timeCookingPath = "//span[@class='label-with-icon']//strong";
         static string caloriesPath = "//span[@id='nutr_kcal']";
         static string ingredientsQuanityPath = "//span[@class='squant value']";
         static string ingredientsTypeSelectedPath = "//option[@value='1']";
@@ -42,7 +44,7 @@ namespace TestParser
         static string authorPath = "//span[@class='profile-thumbnail font-no-style mt-1']";
         //!!! ПОМЕНЯЙ АДРЕСА ВЫВОДА:
         static string filePath = "C:/Users/Skullhacker/Downloads/1000menu2.txt";
-        static string filePath2 = "C:/Users/Skullhacker/Downloads/1000menu2.json";
+        static string filePath2 = "C:/Users/Skullhacker/Downloads/main1000menu.json";
         static List<Page> validPages = new List<Page>();
         static void Main(string[] args)
         {
@@ -53,21 +55,21 @@ namespace TestParser
             }
             GetAllRequests(allLinks, THREADS_COUNT);
             validPages = validPages.OrderBy(x => int.Parse(x.Link.Substring(host.Length))).ToList();
-            using (StreamWriter writer = new StreamWriter(filePath))
-            {
-                foreach (var page in validPages)
-                {
-                    writer.Write($"Name: {page.DishName}; Link: {page.Link}; Ingredients: ");
-                    foreach (var ing in page.Ingredients)
-                    {
-                        if (ing.Quantity == 0)
-                            writer.Write($"{ing.Name} ({ing.Type}), ");
-                        else
-                            writer.Write($"{ing.Name} ({ing.Quantity} {ing.Type}), ");
-                    }
-                    writer.WriteLine();
-                }
-            }
+            //using (StreamWriter writer = new StreamWriter(filePath))
+            //{
+            //    foreach (var page in validPages)
+            //    {
+            //        writer.Write($"Name: {page.DishName}; Link: {page.Link}; Ingredients: ");
+            //        foreach (var ing in page.Ingredients)
+            //        {
+            //            if (ing.Quantity == 0)
+            //                writer.Write($"{ing.Name} ({ing.Type}), ");
+            //            else
+            //                writer.Write($"{ing.Name} ({ing.Quantity} {ing.Type}), ");
+            //        }
+            //        writer.WriteLine();
+            //    }
+            //}
             var options1 = new JsonSerializerOptions
             {
                 Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
@@ -75,10 +77,7 @@ namespace TestParser
             };
             using (StreamWriter writer = new StreamWriter(filePath2))
             {
-                foreach (var page in validPages)
-                {
-                    writer.WriteLine(JsonSerializer.Serialize(page, options1));
-                }
+                 writer.WriteLine(JsonSerializer.Serialize(validPages, options1));
             }
             Console.WriteLine("Done!");
             Console.ReadLine();
@@ -101,10 +100,12 @@ namespace TestParser
         {
 
             string link = "";
+            string imgLink = "";
             string dishName = "";
             int rating = 0;
             int servingNumbers = 0;
             int calories = 0;
+            string timeCook = "";
             List<ExactIngredient> ingredients = new List<ExactIngredient>();
             string url = host + i;
             HtmlWeb site = new HtmlWeb();
@@ -120,8 +121,35 @@ namespace TestParser
             if (CheckIfPageExist(document, authorPath))
             {
                 link = url;
+                try
+                {
+                    imgLink = FindAttribute(document, imgPath, "src")[0];
+                }
+                catch
+                {
+                    imgLink = "//static.wikia.nocookie.net/two-piecerp/images/5/52/Noimg.png/revision/latest/scale-to-width-down/1000?cb=20210705071141";
+                }
                 dishName = FindInnerText(document, namePath)[0];
                 ingredients = GetIngredients(document);
+                timeCook = FindInnerText(document, timeCookingPath)[0];
+                int hours = 0;
+                int minutes = 0;
+                string[] words = timeCook.Split(' ');
+                for (int k = 0; k < words.Length; k++)
+                {
+                    if (int.TryParse(words[k], out int num))
+                    {
+                        if (k + 1 < words.Length && words[k + 1] == "ч")
+                        {
+                            hours = num;
+                        }
+                        else if (k + 1 < words.Length && words[k + 1] == "мин")
+                        {
+                            minutes = num;
+                        }
+                    }
+                }
+                Time cookingTime = new Time(hours, minutes);
                 try
                 {
                     rating = int.Parse(FindInnerText(document, positiveRatingPath)[0]);
@@ -139,11 +167,11 @@ namespace TestParser
                 }
                 servingNumbers = int.Parse(FindAttribute(document, servingNumbersPath, "value")[0]);
                 calories = int.Parse(FindInnerText(document, caloriesPath)[0]);
-                Page page = new Page(link, dishName, rating, servingNumbers, calories, ingredients);
+                Page page = new Page(link, dishName, "https:" + imgLink, rating, servingNumbers, calories, cookingTime, ingredients);
                 validPages.Add(page);
             }
             counter++;
-            Console.WriteLine($"Прогресс: {counter}$ ({Math.Round((counter/ITERATIONS_COUNT)*100, 3)})%");
+            Console.WriteLine($"Прогресс: {Math.Round((counter/ITERATIONS_COUNT)*100, 3)}%");
         }
         static List<ExactIngredient> GetIngredients(HtmlDocument doc)
         {
