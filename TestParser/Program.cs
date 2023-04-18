@@ -143,7 +143,7 @@ namespace TestParser
                 validPages.Add(page);
             }
             counter++;
-            Console.WriteLine($"Выкачано денег скобелева: {counter}$ ({Math.Round((counter/ITERATIONS_COUNT)*100, 3)})%");
+            Console.WriteLine($"Прогресс: {counter}$ ({Math.Round((counter/ITERATIONS_COUNT)*100, 3)})%");
         }
         static List<ExactIngredient> GetIngredients(HtmlDocument doc)
         {
